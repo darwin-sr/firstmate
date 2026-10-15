@@ -1479,9 +1479,38 @@ _fm_composer_leftbar_cwd_start() {  # <screen> <first-row> <last-row>
 # immediately above that footer, recognised by
 # _fm_composer_leftbar_cwd_start) is composer furniture too. Real content is
 # pending when styling can prove it real, unknown otherwise.
+# _fm_composer_row_is_leftbar_footer: 0 when the run's LAST row is opencode's
+# own mode/model/branch line (FM_COMPOSER_LEFTBAR_FOOTER_RE_DEFAULT above)
+# rather than typed text. Proved from BOTH forms of that row - the ghost-
+# stripped content and the ANSI-stripped plain row - because opencode draws
+# the footer's identifying cells DE-EMPHASISED: verified live on opencode
+# 1.19.0, which renders the mode word at RGB 67;133;190 and the middle-dot
+# separators at 111;110;105, luminances 119.8 and 109.7 against the 128
+# ghost threshold. fm_composer_strip_ghost exists to answer "what did the human
+# type?", so it deleted exactly the cells that identify the footer, the
+# column-zero anchor became unreachable on every styled backend (tmux, Herdr,
+# Zellij - which is all of them, since the unstyled row keeps its styling
+# bytes), and a real idle composer read `pending`: the verdict that refuses
+# every send, restart, and shutdown and skips every steer doorbell. Proving the
+# furniture on the row ghost stripping cannot reach is the fix. What makes that
+# safe is what the plain form can and cannot newly reach: a row is exempted by
+# the plain form only when the ghost-stripped row still fails the pattern,
+# which means the stripped content is non-empty while its own leading
+# `Build`/`Plan` cell was deleted as ghost. Nothing opencode draws
+# de-emphasises a typed row's own leading cells - only its furniture is drawn
+# dimmed - so the only rows the plain form admits beyond the stripped one are
+# de-emphasised furniture, and the mode footer is the only furniture opencode
+# draws that opens with a mode word. That makes the exemption self-confirming
+# rather than asserted, and it is the argument to recheck when a new opencode
+# release moves a colour.
+_fm_composer_row_is_leftbar_footer() {  # <stripped-content> <plain-content> <footer-re>
+  fm_composer_idle_matches "$1" "$3" sensitive && return 0
+  fm_composer_idle_matches "$2" "$3" sensitive
+}
+
 _fm_composer_classify_leftbar() {  # <screen> <styled> <first-row> <last-row>
   local screen=$1 styled=$2 first=$3 last=$4
-  local row raw content pending_seen=0 footer_re leading_blank=1 placeholder_position=0 cwd_start
+  local row raw content plain pending_seen=0 footer_re leading_blank=1 placeholder_position=0 cwd_start
   footer_re=${FM_COMPOSER_LEFTBAR_FOOTER_RE:-$FM_COMPOSER_LEFTBAR_FOOTER_RE_DEFAULT}
   cwd_start=$(_fm_composer_leftbar_cwd_start "$screen" "$first" "$last") || cwd_start=-1
   row=$first
@@ -1491,10 +1520,15 @@ _fm_composer_classify_leftbar() {  # <screen> <styled> <first-row> <last-row>
     fi
     raw=$(_fm_composer_screen_row "$row" "$screen")
     content=$(_fm_composer_row_content "$raw" "$styled")
+    plain=$(_fm_composer_row_content "$raw" 0)
     case "$content" in
       '┃'*) content=${content#┃} ;;
     esac
+    case "$plain" in
+      '┃'*) plain=${plain#┃} ;;
+    esac
     fm_composer_normalize_trim_var content
+    fm_composer_normalize_trim_var plain
     if [ -z "$content" ]; then row=$((row + 1)); continue; fi
     if [ "$leading_blank" = 1 ] && [ "$row" -gt "$first" ]; then
       placeholder_position=1
@@ -1507,7 +1541,7 @@ _fm_composer_classify_leftbar() {  # <screen> <styled> <first-row> <last-row>
       row=$((row + 1)); continue
     fi
     if [ "$row" -eq "$last" ] \
-       && fm_composer_idle_matches "$content" "$footer_re" sensitive; then
+       && _fm_composer_row_is_leftbar_footer "$content" "$plain" "$footer_re"; then
       row=$((row + 1)); continue
     fi
     pending_seen=1
