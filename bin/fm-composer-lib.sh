@@ -492,6 +492,14 @@ FM_COMPOSER_IDLE_RE_DEFAULT='^Type a message\.\.\.$|^Ask anything(\.\.\.|…)|^P
 # Opencode draws a mode/model footer line INSIDE its left-bar composer
 # ("Build · GPT-5.5 Fast OpenAI · high"). It is composer furniture, not typed
 # text, and only the run's LAST row is ever matched against it.
+# The pattern stays deliberately narrow: the space after the separator is
+# required (`[[:space:]]+`, never `[[:space:]]*`), and it admits no mode word
+# beyond opencode's own Build/Plan pair, because this exemption is the one
+# path that can turn a row holding typed text into `empty`, and `empty` is the
+# verdict that authorizes typing into a live session. Widening it to admit a
+# colour that ghost stripping currently reaches (for example a differently
+# dimmed mode cell) belongs with a fresh live capture in
+# docs/verification/runtime-backends.md, not with a regex edit.
 FM_COMPOSER_LEFTBAR_FOOTER_RE_DEFAULT='^(Build|Plan)[[:space:]]+·[[:space:]]+'
 # Claude draws its permission-mode hint on its own row directly below the
 # composer (` ⏵⏵ bypass permissions on (shift+tab to cycle)`, ` ⏵⏵ accept edits
