@@ -748,6 +748,10 @@ test_matrix_opencode_leftbar_signals() {
     pending "$CAPS_TMUX" "$captured_119_pending" 3
   assert_screen "opencode 1.19.0 typed composer on herdr" \
     pending "$CAPS_STYLED" "$captured_119_pending"
+  assert_screen "opencode 1.19.0 de-emphasised footer row on herdr" \
+    empty "$CAPS_STYLED" "$captured_119_idle"
+  assert_screen "opencode 1.19.0 de-emphasised footer row on zellij" \
+    empty "$CAPS_STYLED_NOID" "$captured_119_idle"
   # Plain backends keep the strict posture on the SAME bytes: opencode's cwd
   # row survives an unstyled capture, and an unrecognized shape must defer
   # rather than read empty, because firstmate types into an `empty` verdict.

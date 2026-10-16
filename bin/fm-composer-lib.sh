@@ -1418,9 +1418,7 @@ _fm_composer_leftbar_cwd_start() {  # <screen> <first-row> <last-row>
   # loop applies); the furniture run ends on the row above it, and a last row
   # that is not the footer leaves the region without such furniture.
   raw=$(_fm_composer_screen_row "$last" "$plain")
-  rest=$(_fm_composer_row_content "$raw" 0)
-  case "$rest" in '┃'*) rest=${rest#┃} ;; *) rest= ;; esac
-  fm_composer_normalize_trim_var rest
+  rest=$(_fm_composer_leftbar_plain_content "$raw")
   fm_composer_idle_matches "$rest" "$footer_re" sensitive || return 1
   # The region's width: the widest trimmed plain row across first..last. The
   # furniture is right-aligned and the widest rows reach the pane's right
@@ -1517,10 +1515,12 @@ _fm_composer_row_is_leftbar_footer() {  # <stripped-content> <plain-content> <fo
 }
 
 # _fm_composer_leftbar_plain_content: the left-bar content cell's second form,
-# normalized exactly like the ghost-stripped cell it is paired with. Only the
-# LAST row of a run can exempt anything (see
-# _fm_composer_row_is_leftbar_footer), so both call sites take it from here
-# inside their last-row branch rather than paying a second capture and sed on
+# normalized exactly like the ghost-stripped cell it is paired with, and the
+# ONE definition of that form: the classifier, the extractor, and the
+# cwd/branch recogniser all prove the footer from it, so they cannot drift.
+# Only the LAST row of a run can exempt anything (see
+# _fm_composer_row_is_leftbar_footer), so every call site takes it from here
+# inside its last-row branch rather than paying a second capture and sed on
 # every row of every composer read.
 _fm_composer_leftbar_plain_content() {  # <raw-row> -> plain content on stdout
   local plain
