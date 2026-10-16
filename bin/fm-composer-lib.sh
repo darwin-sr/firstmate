@@ -1790,7 +1790,7 @@ _fm_composer_select_cursorless() {
 }
 
 fm_composer_extract_selected_content() {  # <caps> <screen>
-  local caps=$1 screen=$2 styled=0 kv plain row raw content glyph joined='' footer_re prompt_row=-1
+  local caps=$1 screen=$2 styled=0 kv plain plain_row row raw content glyph joined='' footer_re prompt_row=-1
   local leading_blank=1 placeholder_position=0 prompt_is_shell=0 cwd_start
   footer_re=${FM_COMPOSER_LEFTBAR_FOOTER_RE:-$FM_COMPOSER_LEFTBAR_FOOTER_RE_DEFAULT}
   while IFS= read -r kv; do
@@ -1820,7 +1820,10 @@ EOF
         ;;
       leftbar)
         case "$content" in '┃'*) content=${content#┃} ;; esac
+        plain_row=$(_fm_composer_row_content "$raw" 0)
+        case "$plain_row" in '┃'*) plain_row=${plain_row#┃} ;; esac
         fm_composer_normalize_trim_var content
+        fm_composer_normalize_trim_var plain_row
         if [ -z "$content" ]; then
           :
         elif [ "$leading_blank" = 1 ] && [ "$row" -gt "$FM_COMPOSER_SELECTED_FIRST" ]; then
@@ -1864,7 +1867,7 @@ EOF
             && fm_composer_idle_matches "$content" "${FM_COMPOSER_IDLE_RE:-$FM_COMPOSER_IDLE_RE_DEFAULT}" insensitive; } \
        || { [ "$FM_COMPOSER_SELECTED_KIND" = leftbar ] \
             && [ "$row" -eq "$FM_COMPOSER_SELECTED_LAST" ] \
-            && fm_composer_idle_matches "$content" "$footer_re" sensitive; }; then
+            && _fm_composer_row_is_leftbar_footer "$content" "$plain_row" "$footer_re"; }; then
       row=$((row + 1))
       continue
     fi
