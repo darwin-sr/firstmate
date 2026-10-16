@@ -1516,9 +1516,25 @@ _fm_composer_row_is_leftbar_footer() {  # <stripped-content> <plain-content> <fo
   fm_composer_idle_matches "$2" "$3" sensitive
 }
 
+# _fm_composer_leftbar_plain_content: the left-bar content cell's second form,
+# normalized exactly like the ghost-stripped cell it is paired with. Only the
+# LAST row of a run can exempt anything (see
+# _fm_composer_row_is_leftbar_footer), so both call sites take it from here
+# inside their last-row branch rather than paying a second capture and sed on
+# every row of every composer read.
+_fm_composer_leftbar_plain_content() {  # <raw-row> -> plain content on stdout
+  local plain
+  plain=$(_fm_composer_row_content "$1" 0)
+  case "$plain" in
+    '┃'*) plain=${plain#┃} ;;
+  esac
+  fm_composer_normalize_trim_var plain
+  printf '%s' "$plain"
+}
+
 _fm_composer_classify_leftbar() {  # <screen> <styled> <first-row> <last-row>
   local screen=$1 styled=$2 first=$3 last=$4
-  local row raw content plain pending_seen=0 footer_re leading_blank=1 placeholder_position=0 cwd_start
+  local row raw content pending_seen=0 footer_re leading_blank=1 placeholder_position=0 cwd_start
   footer_re=${FM_COMPOSER_LEFTBAR_FOOTER_RE:-$FM_COMPOSER_LEFTBAR_FOOTER_RE_DEFAULT}
   cwd_start=$(_fm_composer_leftbar_cwd_start "$screen" "$first" "$last") || cwd_start=-1
   row=$first
@@ -1528,15 +1544,10 @@ _fm_composer_classify_leftbar() {  # <screen> <styled> <first-row> <last-row>
     fi
     raw=$(_fm_composer_screen_row "$row" "$screen")
     content=$(_fm_composer_row_content "$raw" "$styled")
-    plain=$(_fm_composer_row_content "$raw" 0)
     case "$content" in
       '┃'*) content=${content#┃} ;;
     esac
-    case "$plain" in
-      '┃'*) plain=${plain#┃} ;;
-    esac
     fm_composer_normalize_trim_var content
-    fm_composer_normalize_trim_var plain
     if [ -z "$content" ]; then row=$((row + 1)); continue; fi
     if [ "$leading_blank" = 1 ] && [ "$row" -gt "$first" ]; then
       placeholder_position=1
@@ -1549,7 +1560,8 @@ _fm_composer_classify_leftbar() {  # <screen> <styled> <first-row> <last-row>
       row=$((row + 1)); continue
     fi
     if [ "$row" -eq "$last" ] \
-       && _fm_composer_row_is_leftbar_footer "$content" "$plain" "$footer_re"; then
+       && _fm_composer_row_is_leftbar_footer "$content" \
+              "$(_fm_composer_leftbar_plain_content "$raw")" "$footer_re"; then
       row=$((row + 1)); continue
     fi
     pending_seen=1
@@ -1798,7 +1810,7 @@ _fm_composer_select_cursorless() {
 }
 
 fm_composer_extract_selected_content() {  # <caps> <screen>
-  local caps=$1 screen=$2 styled=0 kv plain plain_row row raw content glyph joined='' footer_re prompt_row=-1
+  local caps=$1 screen=$2 styled=0 kv plain row raw content glyph joined='' footer_re prompt_row=-1
   local leading_blank=1 placeholder_position=0 prompt_is_shell=0 cwd_start
   footer_re=${FM_COMPOSER_LEFTBAR_FOOTER_RE:-$FM_COMPOSER_LEFTBAR_FOOTER_RE_DEFAULT}
   while IFS= read -r kv; do
@@ -1828,10 +1840,7 @@ EOF
         ;;
       leftbar)
         case "$content" in '┃'*) content=${content#┃} ;; esac
-        plain_row=$(_fm_composer_row_content "$raw" 0)
-        case "$plain_row" in '┃'*) plain_row=${plain_row#┃} ;; esac
         fm_composer_normalize_trim_var content
-        fm_composer_normalize_trim_var plain_row
         if [ -z "$content" ]; then
           :
         elif [ "$leading_blank" = 1 ] && [ "$row" -gt "$FM_COMPOSER_SELECTED_FIRST" ]; then
@@ -1875,7 +1884,8 @@ EOF
             && fm_composer_idle_matches "$content" "${FM_COMPOSER_IDLE_RE:-$FM_COMPOSER_IDLE_RE_DEFAULT}" insensitive; } \
        || { [ "$FM_COMPOSER_SELECTED_KIND" = leftbar ] \
             && [ "$row" -eq "$FM_COMPOSER_SELECTED_LAST" ] \
-            && _fm_composer_row_is_leftbar_footer "$content" "$plain_row" "$footer_re"; }; then
+            && _fm_composer_row_is_leftbar_footer "$content" \
+                   "$(_fm_composer_leftbar_plain_content "$raw")" "$footer_re"; }; then
       row=$((row + 1))
       continue
     fi
