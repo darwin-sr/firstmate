@@ -828,6 +828,7 @@ The cursorless arm is the one that matters for the doorbell, because it is the a
 The portable half lives in `test_matrix_opencode_leftbar_signals` in `tests/fm-composer-lib.test.sh`, carrying the live row's foreground truecolor triples byte for byte in both states: the idle pane reads `empty` and a bright `fix the doorbell skip` input row above the same footer reads `pending`, on tmux and on Herdr and under `LC_ALL=C`.
 The same bytes on a plain backend read `unknown` in both states, because opencode 1.19.0 also draws a de-emphasised `~/.treehouse/fm001-b8697d/1/fm001:fm/` row inside the box that survives an unstyled capture, so the strict posture keeps deferring rather than reading `empty` there.
 Overriding `FM_COMPOSER_LEFTBAR_FOOTER_RE` to a pattern that cannot match puts the false `pending` straight back on the captured idle pane, which pins the exemption as the load-bearing signal rather than an incidental pass.
+`fm_composer_extract_selected_content` applies the same rule to the same run, so the classified-empty pane hands back no composer text and the typed pane hands back only `fix the doorbell skip`; zellij's append proof (`fm_backend_zellij_composer_observed_append` in `bin/backends/zellij.sh`) requires the extracted text to equal the prior content plus the typed text, so a footer leaking into that read fails the send instead of confirming one.
 
 ### 2026-09-20 claude 2.1.236 statusLine footer through Herdr
 
