@@ -1,0 +1,19 @@
+opencode version: /opt/homebrew/bin/opencode 1.19.0
+target: pane primary in lab tmux socket fm-lab (disposable FM_HOME=/var/folders/49/31738pbn6092dpz99d21m1g80000gn/T//fm-lab.qIYOoM)
+
+== idle pane, cursor-anchored read (real product path fm_tmux_composer_state)
+fixed  verdict=empty
+typed  verdict=pending
+cleared verdict=empty
+idle   cursorless verdict=unknown
+
+== adversarial: the footer exemption is the load-bearing signal on the SAME live idle capture
+FM_COMPOSER_LEFTBAR_FOOTER_RE='^NEVER-MATCHES$' -> pending
+footer without the real space after the separator -> pending
+
+== typed composer region (rows 15-19 of the live capture), extractor path
+fixed extract=[fix the doorbell skip]
+base (pre-change lib, 5f2b81b) on the SAME live opencode 1.19.0 bytes:
+  idle composer verdict  = pending
+  typed composer verdict = unknown
+  extractor on typed run = [fix the doorbell skip Space Bunny Free max]
